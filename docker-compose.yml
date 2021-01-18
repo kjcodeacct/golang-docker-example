@@ -1,0 +1,71 @@
+version: "3"
+services:
+  traefik:
+    image: "traefik:v2.3"
+    container_name: traefik_container
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  whoami:
+    container_name: whoami_container
+    image: "traefik/whoami"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+  elasticsearch:
+    image: elasticsearch:7.10.1
+    container_name: elasticsearch_container
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the Elasticsearch user, set to at least 65536 on modern systems
+        hard: 65536
+    expose:
+      - 9200
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - discovery.type=single-node
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.elasticsearch.rule=Host(`elastic.localhost`)"
+      - "traefik.http.routers.elasticsearch.entrypoints=web"
+  kibana:
+    image: 'docker.elastic.co/kibana/kibana:7.6.2'
+    container_name: kibana_container
+    ports:
+        - '5601:5601'
+    environment:
+        - 'ELASTICSEARCH_HOSTS=http://elasticsearch_container:9200'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kibana.rule=Host(`kibana.localhost`)"
+      - "traefik.http.routers.kibana.entrypoints=web"
+    depends_on:
+      - elasticsearch
+  fluentd:
+    container_name: fluentdb_container
+    build: ./fluentd
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch_container
+      - ELASTICSEARCH_PORT=9200
+    volumes:
+      - "REPO_DIR_GOES_HERE/golang_docker_example/log"
+      - "REPO_DIR_GOES_HERE/golang_docker_example/fluentd/conf:/fluentd/etc"
+    depends_on:
+      - elasticsearch
