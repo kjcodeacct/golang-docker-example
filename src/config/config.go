@@ -8,6 +8,7 @@ var runtimeConfig Config
 
 type Config struct {
 	ProcessName string
+	LogMode     int `default:"0"`
 	LogDir      string
 	Port        int
 }

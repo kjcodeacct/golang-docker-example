@@ -2,6 +2,7 @@ package logger
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 
@@ -13,8 +14,8 @@ import (
 var zapLogger *zap.Logger
 var logSink *lumberjack.Logger
 
-const LogToFile = 1
 const LogToStdOut = 0
+const LogToFile = 1
 
 func Get() (*zap.Logger, error) {
 
@@ -34,6 +35,11 @@ func Setup(logMethod int, logDir string) error {
 		MaxAge:     28, // days
 	})
 
+	if _, err := os.Stat(logDir); !os.IsNotExist(err) {
+		errMsg := fmt.Sprintf("%s log directory is not found", logDir)
+		return errors.New(errMsg)
+	}
+
 	atom := zap.NewAtomicLevel()
 
 	encoderCfg := zap.NewProductionEncoderConfig()
@@ -47,12 +53,14 @@ func Setup(logMethod int, logDir string) error {
 			zapcore.Lock(os.Stdout),
 			atom,
 		))
-	} else {
+	} else if logMethod == LogToFile {
 		zapLogger = zap.New(zapcore.NewCore(
 			zapcore.NewJSONEncoder(encoderCfg),
 			logFileWriter,
 			atom,
 		))
+	} else {
+		return errors.New("please specify a value (0,1) for LOG_MODE")
 	}
 
 	atom.SetLevel(zap.DebugLevel)

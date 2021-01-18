@@ -65,7 +65,21 @@ services:
       - ELASTICSEARCH_HOST=elasticsearch_container
       - ELASTICSEARCH_PORT=9200
     volumes:
-      - "REPO_DIR_GOES_HERE/golang_docker_example/log"
-      - "REPO_DIR_GOES_HERE/golang_docker_example/fluentd/conf:/fluentd/etc"
+      - "PROJECT_DIRgolang_docker_example/log"
+      - "PROJECT_DIRgolang_docker_example/fluentd/conf:/fluentd/etc"
     depends_on:
       - elasticsearch
+  goapp:
+    container_name: goapp_container
+    build: ./src
+    environment:
+      - GOAPP_LOGDIR="/tmp/log"
+      - GOAPP_PORT=8080
+    ports:
+      - "8085:8080"
+    volumes:
+      - "PROJECT_DIRgolang_docker_example/log:/tmp/log"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.goapp.rule=Host(`goapp.localhost`)"
+      - "traefik.http.routers.goapp.entrypoints=web"

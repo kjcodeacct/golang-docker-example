@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const processName = "testapp"
+const processName = "goapp"
 
 var zapLogger *zap.Logger
 
@@ -26,7 +26,7 @@ func setup() {
 
 	logFileName := fmt.Sprintf("%s.log", processName)
 	logFileName = filepath.Join(config.Get().LogDir, logFileName)
-	err = logger.Setup(logger.LogToFile, logFileName)
+	err = logger.Setup(config.Get().LogMode, logFileName)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
